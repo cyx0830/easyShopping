@@ -14,6 +14,7 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         while (true) {
             Order order = new Order();
+            OrderDiscountRule orderDiscountRule = new OrderDiscountRule();
             Apple apple = new Apple();
             Strawberry strawberry = new Strawberry();
             Mango mango = new Mango();
@@ -32,6 +33,11 @@ public class Main {
             mango.setPrice(scanner.next());
             System.out.println("请设置芒果的折扣（1-10）");
             mango.setDiscount(scanner.next());
+            System.out.println("请设置满减规则,依次输入每满多少元减多少元");
+            orderDiscountRule.setPrice(scanner.next());
+            orderDiscountRule.setReduce(scanner.next());
+            order.setOrderDiscountRule(orderDiscountRule);
+
             while (true) {
                 System.out.println("请选择要购买的商品");
                 System.out.println("1：苹果");
@@ -205,6 +211,10 @@ public class Main {
          */
         private BigDecimal afterDiscountPrice;
         /**
+         * 订单满减规则
+         */
+        private OrderDiscountRule orderDiscountRule;
+        /**
          * 支付时间
          */
         private LocalDateTime payTime;
@@ -244,6 +254,44 @@ public class Main {
         public void setPayTime(LocalDateTime payTime) {
             this.payTime = payTime;
         }
+
+        public OrderDiscountRule getOrderDiscountRule() {
+            return orderDiscountRule;
+        }
+
+        public void setOrderDiscountRule(OrderDiscountRule orderDiscountRule) {
+            this.orderDiscountRule = orderDiscountRule;
+        }
+    }
+
+    /**
+     * 满减规则
+     */
+    private static class OrderDiscountRule {
+        /**
+         * 每满金额
+         */
+        private BigDecimal price;
+        /**
+         * 减多少元
+         */
+        private BigDecimal reduce;
+
+        public BigDecimal getPrice() {
+            return price;
+        }
+
+        public void setPrice(String price) {
+            this.price = new BigDecimal(price);
+        }
+
+        public BigDecimal getReduce() {
+            return reduce;
+        }
+
+        public void setReduce(String reduce) {
+            this.reduce = new BigDecimal(reduce);
+        }
     }
 
     /**
@@ -276,7 +324,7 @@ public class Main {
             this.nums = new BigDecimal(pounds);
             this.discount = new BigDecimal(discount);
             this.beforeDiscountPrice = new BigDecimal(price).multiply(new BigDecimal(pounds));
-            this.afterDiscountPrice = new BigDecimal(price).multiply(new BigDecimal(discount)).divide(BigDecimal.TEN, 2, RoundingMode.HALF_UP).multiply(new BigDecimal(pounds));
+            this.afterDiscountPrice = new BigDecimal(price).multiply(new BigDecimal(discount).divide(BigDecimal.TEN, 2, RoundingMode.HALF_UP)).multiply(new BigDecimal(pounds));
         }
 
         public String getName() {
@@ -336,7 +384,9 @@ public class Main {
                 return ;
             }
             order.setBeforeDiscountPrice(order.getOrderDetails().stream().map(OrderDetail::getBeforeDiscountPrice).reduce(BigDecimal::add).get());
-            order.setAfterDiscountPrice(order.getOrderDetails().stream().map(OrderDetail::getAfterDiscountPrice).reduce(BigDecimal::add).get());
+            BigDecimal afterDiscountPrice = order.getOrderDetails().stream().map(OrderDetail::getAfterDiscountPrice).reduce(BigDecimal::add).get();
+            afterDiscountPrice = afterDiscountPrice.subtract(afterDiscountPrice.divideToIntegralValue(order.getOrderDiscountRule().getPrice()).multiply(order.orderDiscountRule.reduce));
+            order.setAfterDiscountPrice(afterDiscountPrice);
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append("尊贵的会员用户：").append(this.name).append("，您好").append("\n");
             stringBuilder.append("  您本次购物明细如下").append("\n");
@@ -377,4 +427,5 @@ public class Main {
             return sb.toString(); // 返回包含了空格填充后的新字符串
         }
     }
+
 }
